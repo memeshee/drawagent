@@ -1,0 +1,22 @@
+.model tally3
+.inputs V0 V1 V2
+.outputs SUM COUT
+.names V0 V1 N1
+11 0
+.names V0 N1 N2
+11 0
+.names V1 N1 N3
+11 0
+.names N2 N3 N4
+11 0
+.names N4 V2 N5
+11 0
+.names N4 N5 N6
+11 0
+.names V2 N5 N7
+11 0
+.names N6 N7 SUM
+11 0
+.names N1 N5 COUT
+11 0
+.end

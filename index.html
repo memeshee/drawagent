@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DrawAgent — trustless on-chain casino · TapeOut × X Layer</title>
+<meta name="description" content="Raffles and votes executed by real on-chain circuits on X Layer. Every result verifiable with one free read call.">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+:root{
+  --gold:#f5c451; --gold2:#ffe9a8; --purple:#7c5cff; --green:#34d399;
+  --bg:#07090e; --felt:#0c1620; --card:#101927; --line:#223047; --mut:#8fa0b5;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:
+  radial-gradient(1200px 500px at 50% -10%,rgba(124,92,255,.22),transparent 60%),
+  radial-gradient(900px 420px at 85% 10%,rgba(245,196,81,.12),transparent 60%),
+  radial-gradient(1000px 700px at 50% 110%,rgba(52,211,153,.08),transparent 60%),
+  var(--bg);color:#eef3f9;min-height:100vh}
+.wrap{max-width:1020px;margin:0 auto;padding:28px 18px 60px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;border-radius:12px;background:conic-gradient(from 200deg,#7c5cff,#f5c451,#34d399,#7c5cff);
+  display:grid;place-items:center;font-weight:900;color:#0b0e13;font-size:22px;box-shadow:0 0 24px rgba(245,196,81,.35)}
+.brand h1{margin:0;font-size:22px;letter-spacing:.5px}
+.brand small{color:var(--mut);display:block;font-size:12px;letter-spacing:1.5px;text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:12px 20px;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;transition:transform .12s ease,box-shadow .2s}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#231a02;box-shadow:0 6px 30px rgba(245,196,81,.35)}
+.btn-gold:hover{box-shadow:0 6px 40px rgba(245,196,81,.55)}
+.btn-ghost{background:#16202f;color:#dbe5f1;border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:wait}
+.hero{margin-top:18px;border:1px solid var(--line);border-radius:20px;padding:26px;background:
+  linear-gradient(180deg,rgba(124,92,255,.12),transparent 40%),var(--card);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:-40%;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(245,196,81,.05) 46px 48px);pointer-events:none}
+.hero h2{margin:0 0 6px;font-size:clamp(26px,4.6vw,42px);line-height:1.05}
+.hero h2 .gold{background:linear-gradient(180deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mut);margin:8px 0 0;max-width:62ch}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.stat{background:#0b1220;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px}
+.stat b{display:block;font-size:18px;color:var(--gold)}
+.token-banner{margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(90deg,rgba(245,196,81,.16),rgba(124,92,255,.14));border:1px solid rgba(245,196,81,.4);border-radius:14px;padding:14px 16px}
+.token-banner .coin{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff6d8,var(--gold) 60%,#9a7414);display:grid;place-items:center;font-weight:900;color:#231a02}
+.token-banner code{color:var(--gold2);font-size:12px;word-break:break-all}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,#121c2c,#0d1421);border:1px solid var(--line);border-radius:18px;padding:20px;position:relative;overflow:hidden}
+.card h3{margin:0 0 2px;font-size:18px}
+.card .sub{color:var(--mut);font-size:13px;margin:0 0 12px}
+.stage{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+/* wheel */
+.wheel-wrap{position:relative;width:230px;height:230px;flex:none;margin:0 auto}
+.wheel{width:100%;height:100%;border-radius:50%;border:10px solid #1c2940;box-shadow:0 0 0 3px var(--gold),0 0 44px rgba(245,196,81,.3),inset 0 0 30px rgba(0,0,0,.6);
+  transition:transform 3.4s cubic-bezier(.12,.8,.08,1);position:relative;overflow:hidden}
+.wheel svg{width:100%;height:100%;display:block}
+.pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:22px solid var(--gold);filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));z-index:2}
+.hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--gold) 55%,#8a6a10);display:grid;place-items:center;font-weight:900;color:#231a02;font-size:13px;z-index:2;border:3px solid #0b0e13}
+/* seats */
+.seats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.seat{background:#0a111d;border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center;font-size:13px;font-weight:700;transition:all .3s}
+.seat.win{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 18px rgba(52,211,153,.5);background:rgba(52,211,153,.1)}
+.seat.dim{opacity:.45}
+.seat .tick{display:block;font-size:10px;color:var(--mut);font-weight:400}
+.result{background:#080d16;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;font-size:13px;min-height:76px}
+.result .big{font-size:26px;font-weight:900;margin:4px 0}
+.result .big.win{color:var(--green);animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+code{word-break:break-all;font-size:12px;color:var(--green)}
+.mut{color:var(--mut);font-size:13px}
+/* slots */
+.slots{display:flex;gap:10px;justify-content:center;margin:14px 0}
+.reel{width:76px;height:96px;border-radius:14px;background:linear-gradient(180deg,#1a2740,#0a111d);border:1px solid var(--line);display:grid;place-items:center;font-size:44px;overflow:hidden;position:relative}
+.reel.spin{animation:slotblur .12s linear infinite}
+@keyframes slotblur{0%{transform:translateY(-4px);filter:blur(1px)}50%{transform:translateY(4px);filter:blur(2px)}100%{transform:translateY(-4px);filter:blur(1px)}}
+.feed{max-height:150px;overflow:auto;font-size:12px;background:#080d16;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:10px}
+.feed div{padding:3px 0;border-bottom:1px dashed #1a2740}
+.copybtn{background:#1a2740;border:1px solid var(--line);color:#dbe5f1;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;margin-left:6px}
+a{color:#b7a5ff}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px dashed #1c2940}
+footer{margin-top:22px;color:var(--mut);font-size:12px;text-align:center}
+.marquee{overflow:hidden;white-space:nowrap;border:1px solid rgba(245,196,81,.3);border-radius:12px;margin-top:14px;background:rgba(245,196,81,.06);padding:8px 0;font-size:13px;color:var(--gold2)}
+.marquee span{display:inline-block;padding-left:100%;animation:mq 22s linear infinite}
+@keyframes mq{to{transform:translateX(-100%)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><div class="logo">◈</div><div><h1>DrawAgent</h1><small>trustless casino · tapeout × x layer</small></div></div>
+    <a class="btn btn-gold" id="tokenTop" href="https://ignix.bot/launch?token=0x40068a2987d9bB411e88b79731a9659eab18EEeE" target="_blank" rel="noopener">🪙 Trade DRAWAGENT</a>
+  </div>
+
+  <div class="hero">
+    <h2>Every spin settles <span class="gold">on-chain.</span><br>No house. Just circuits.</h2>
+    <p>Raffles for 8 seats and 3-ballot votes executed by real TapeOut NAND circuits on X Layer — served by OKX.AI agent #13908. Each result is a free <code>eval()</code> read call anyone can replay. Each execution burns transistors, tying demand to real usage.</p>
+    <div class="stats">
+      <div class="stat"><b>109</b>transistors burned (real usage)</div>
+      <div class="stat"><b>2</b>circuits live · DRAW-8 #2 + TALLY-3 #1</div>
+      <div class="stat"><b>X Layer · 196</b>fully on-chain execution</div>
+      <div class="stat"><b>1 read call</b>to verify any result</div>
+    </div>
+    <div class="token-banner">
+      <div class="coin">$</div>
+      <div style="flex:1;min-width:220px"><b>DRAWAGENT is live on IGNIX</b> — bonding-curve launch on X Layer.<br><code>0x40068a2987d9bB411e88b79731a9659eab18EEeE</code></div>
+      <a class="btn btn-gold" href="https://ignix.bot/launch?token=0x40068a2987d9bB411e88b79731a9659eab18EEeE" target="_blank" rel="noopener">Buy / View chart →</a>
+    </div>
+  </div>
+
+  <div class="marquee"><span>◈ DRAW-8 · circuit #2 · XOR-fold → 3 winner bits ◈ TALLY-3 · circuit #1 · full adder → 2 count bits ◈ seed = low byte of latest X Layer block hash ◈ verify with one free eth_call ◈ transistors burn on every execution ◈&nbsp;</span></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>🎡 Raffle Roulette — 8 seats</h3>
+      <p class="sub">Seed = low byte of the latest X Layer block hash. Wheel spins, chain decides.</p>
+      <div class="stage">
+        <div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="wheel"></div><div class="hub">DRAW<br>#2</div></div>
+        <div style="flex:1;min-width:200px">
+          <button class="btn btn-gold" id="drawBtn" onclick="runDraw()">🎰 SPIN THE CHAIN</button>
+          <button class="btn btn-ghost" onclick="autoDraw(5)">auto ×5</button>
+          <div class="seats" id="seats"></div>
+        </div>
+      </div>
+      <div class="result" id="drawOut"><span class="mut">Press SPIN — the wheel, the block hash and the circuit agree on a winner.</span></div>
+      <div class="feed" id="drawFeed"></div>
+    </div>
+
+    <div class="card">
+      <h3>🗳️ Tally Slots — 3 ballots</h3>
+      <p class="sub">Full-adder circuit counts Yes votes. Pull the lever.</p>
+      <div class="slots"><div class="reel" id="r0">❔</div><div class="reel" id="r1">❔</div><div class="reel" id="r2">❔</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="runTally([1,0,1])">Yes-No-Yes</button>
+        <button class="btn btn-ghost" onclick="runTally([1,1,0])">Yes-Yes-No</button>
+        <button class="btn btn-ghost" onclick="runTally([1,1,1])">All Yes</button>
+        <button class="btn btn-ghost" onclick="runTally([0,0,0])">All No</button>
+        <button class="btn btn-ghost" onclick="runTally([Math.round(Math.random()),Math.round(Math.random()),Math.round(Math.random())])">🎲 random</button>
+      </div>
+      <div class="result" id="tallyOut"><span class="mut">Pick a ballot combo — the adder counts it on-chain.</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>🔍 Verify it yourself — one free read call</h3>
+    <p class="sub">No wallet. No login. Replay any result against the processor contract.</p>
+    <div class="kv"><span>Processor (TapeOut circuits)</span><span><code id="procAddr">0x93778d6D5a8372690564fED126ea8d0604929C7F</code><button class="copybtn" onclick="copy('procAddr')">copy</button></span></div>
+    <div class="kv"><span>eval(uint256,bytes) selector</span><span><code>0x934d06ea</code> · I/O bits little-endian · DRAW-8 = #2 · TALLY-3 = #1</span></div>
+    <div class="kv"><span>RPC</span><span><code>https://rpc.xlayer.tech</code></span></div>
+    <div class="kv"><span>DRAWAGENT token (IGNIX)</span><span><code>0x40068a2987d9bB411e88b79731a9659eab18EEeE</code><button class="copybtn" onclick="copy('tokAddr')">copy</button></span></div>
+    <span id="tokAddr" style="display:none">0x40068a2987d9bB411e88b79731a9659eab18EEeE</span>
+    <p class="mut">Links: <a href="https://www.tapeout.net/#l2/xlayer/0x93778d6D5a8372690564fED126ea8d0604929C7F" target="_blank" rel="noopener">processor page</a> · <a href="https://www.oklink.com/x-layer/address/0x93778d6D5a8372690564fED126ea8d0604929C7F" target="_blank" rel="noopener">explorer</a> · <a href="https://ignix.bot/launch?token=0x40068a2987d9bB411e88b79731a9659eab18EEeE" target="_blank" rel="noopener">DRAWAGENT on IGNIX</a> · <a href="https://github.com/memeshee/drawagent" target="_blank" rel="noopener">source</a></p>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>⚙️ How it works</h3>
+    <p class="mut">1 · Community runs a raffle or vote through DrawAgent (OKX.AI #13908).<br>2 · The agent executes DRAW-8 / TALLY-3 on its TapeOut processor — transistors burn, usage lands on-chain.<br>3 · Anyone verifies with one <code>eval()</code> read call. Escrow settles the job on delivery.<br>4 · Trading taxes on DRAWAGENT flow to the vault — demand for draws feeds the token.</p>
+  </div>
+
+  <footer>DrawAgent · TapeOut Genesis hackathon · X Layer chain 196 · built trustless — the house can't cheat, it's a circuit.</footer>
+</div>
+
+<script>
+const RPC='https://rpc.xlayer.tech';
+const PROC='0x93778d6D5a8372690564fED126ea8d0604929C7F';
+const TOKEN='https://ignix.bot/launch?token=0x40068a2987d9bB411e88b79731a9659eab18EEeE';
+const DRAW_ID=2, TALLY_ID=1, SEL='934d06ea';
+const $=id=>document.getElementById(id);
+// build wheel svg (8 segments)
+(function(){const cols=['#f5c451','#7c5cff','#34d399','#f472b6','#60a5fa','#fbbf24','#a78bfa','#4ade80'];
+let s='';for(let i=0;i<8;i++){const a0=i*45,a1=a0+45;const x0=50+48*Math.cos(a0*Math.PI/180),y0=50+48*Math.sin(a0*Math.PI/180),x1=50+48*Math.cos(a1*Math.PI/180),y1=50+48*Math.sin(a1*Math.PI/180);
+s+=`<path d="M50,50 L${x0.toFixed(1)},${y0.toFixed(1)} A48,48 0 0,1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${cols[i]}" stroke="#0b0e13" stroke-width="1"/><text x="${(50+33*Math.cos((a0+22.5)*Math.PI/180)).toFixed(1)}" y="${(50+33*Math.sin((a0+22.5)*Math.PI/180)).toFixed(1)}" font-size="11" font-weight="900" fill="#0b0e13" text-anchor="middle" dominant-baseline="middle">#${i}</text>`;}
+$('wheel').innerHTML=`<svg viewBox="0 0 100 100">${s}</svg>`;})();
+const seats=$('seats');
+for(let i=0;i<8;i++){const d=document.createElement('div');d.className='seat';d.id='seat'+i;d.innerHTML=`#${i}<span class="tick">seat</span>`;seats.appendChild(d);}
+let rot=0, spinning=false;
+function encUint(n){return n.toString(16).padStart(64,'0');}
+function encBytes(hex){hex=hex.replace(/^0x/,'');const l=hex.length/2;return encUint(64)+encUint(l)+hex.padEnd(Math.ceil(l/32)*64,'0');}
+async function rpc(method,params){const r=await fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',method,params,id:1})});const j=await r.json();if(j.error)throw new Error(j.error.message);return j.result;}
+async function evalCircuit(id,inputHex){const data='0x'+SEL+encUint(id)+encBytes(inputHex);return rpc('eth_call',[{to:PROC,data},'latest']);}
+function bitsLE(hex,n){const v=BigInt(hex);const o=[];for(let i=0;i<n;i++)o.push(Number((v>>BigInt(i))&1n));return o;}
+function outBytes(raw){const len=parseInt(raw.slice(66,130),16);return '0x'+raw.slice(130,130+len*2);}
+function copy(id){const t=$(id).textContent;navigator.clipboard&&navigator.clipboard.writeText(t);}
+function boom(){if(window.confetti){confetti({particleCount:130,spread:80,origin:{y:.6},colors:['#f5c451','#7c5cff','#34d399','#ffffff']});setTimeout(()=>confetti({particleCount:60,angle:60,spread:60,origin:{x:0}}),250);setTimeout(()=>confetti({particleCount:60,angle:120,spread:60,origin:{x:1}}),400);}}
+async function runDraw(){
+  if(spinning)return;spinning=true;$('drawBtn').disabled=true;
+  $('drawOut').innerHTML='<span class="mut">fetching block hash → calling circuit…</span>';
+  for(let i=0;i<8;i++){$('seat'+i).classList.remove('win');$('seat'+i).classList.add('dim');}
+  try{
+    const b=await rpc('eth_getBlockByNumber',['latest',false]);
+    const seed=parseInt(b.hash.slice(-2),16);
+    const raw=await evalCircuit(DRAW_ID,'0x'+seed.toString(16).padStart(2,'0'));
+    const w=bitsLE(outBytes(raw),3), winner=w[0]+2*w[1]+4*w[2];
+    // spin wheel so winner lands at top (segment i center = i*45+22.5; pointer at top = -90deg)
+    const target=360*5+(270-(winner*45+22.5))- (rot%360);
+    rot+=target;$('wheel').style.transform=`rotate(${rot}deg)`;
+    // suspense ticks while spinning
+    let ticks=0;const tick=setInterval(()=>{const f=Math.floor(Math.random()*8);for(let i=0;i<8;i++)$('seat'+i).classList.toggle('win',i===f);if(++ticks>22)clearInterval(tick);},140);
+    setTimeout(()=>{
+      for(let i=0;i<8;i++){$('seat'+i).classList.remove('win','dim');if(i!==winner)$('seat'+i).classList.add('dim');}
+      $('seat'+winner).classList.add('win');
+      const blk=parseInt(b.number,16);
+      $('drawOut').innerHTML=`<div class="mut">seed 0x${seed.toString(16).padStart(2,'0')} · block ${blk} · <code>eval(2, seed)</code></div><div class="big win">🏆 Winner: #${winner}</div><div class="mut">output <code>${outBytes(raw)}</code> <button class="copybtn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${outBytes(raw)}')">copy</button></div><div class="mut" style="margin-top:6px"><a href="${TOKEN}" target="_blank" rel="noopener">Celebrate with DRAWAGENT 🪙</a></div>`;
+      const f=document.createElement('div');f.textContent=`#${winner} won · seed 0x${seed.toString(16).padStart(2,'0')} · block ${blk}`;$('drawFeed').prepend(f);
+      boom();spinning=false;$('drawBtn').disabled=false;
+    },3500);
+  }catch(e){$('drawOut').innerHTML='<span class="mut">Error: '+e.message+'</span>';spinning=false;$('drawBtn').disabled=false;}
+}
+async function autoDraw(n){for(let k=0;k<n;k++){await new Promise(res=>{const iv=setInterval(()=>{if(!spinning){clearInterval(iv);res();}},300);runDraw();});await new Promise(r=>setTimeout(r,4200));}}
+const EMOJI_Y='✅', EMOJI_N='❌';
+async function runTally(v){
+  const reels=[$('r0'),$('r1'),$('r2')];reels.forEach(r=>r.classList.add('spin'));
+  reels.forEach((r,i)=>setTimeout(()=>{r.textContent=['🎰','⭐','💎'][Math.floor(Math.random()*3)];},i*200));
+  $('tallyOut').innerHTML='<span class="mut">counting on-chain…</span>';
+  try{
+    const byte=v[0]|(v[1]<<1)|(v[2]<<2);
+    const raw=await evalCircuit(TALLY_ID,'0x'+byte.toString(16).padStart(2,'0'));
+    const c=bitsLE(outBytes(raw),2), count=c[0]+2*c[1];
+    setTimeout(()=>{
+      reels.forEach((r,i)=>{r.classList.remove('spin');r.textContent=v[i]?EMOJI_Y:EMOJI_N;});
+      $('tallyOut').innerHTML=`<div class="mut">ballots [${v}] · <code>eval(1, 0x${byte.toString(16).padStart(2,'0')})</code></div><div class="big ${count>=2?'win':''}">${count} Yes / 3</div><div class="mut">output <code>${outBytes(raw)}</code></div>`;
+      if(count===3)boom();
+    },1100);
+  }catch(e){reels.forEach(r=>r.classList.remove('spin'));$('tallyOut').innerHTML='<span class="mut">Error: '+e.message+'</span>';}
+}
+</script>
+</body>
+</html>

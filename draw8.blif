@@ -1,0 +1,52 @@
+.model draw8
+.inputs S0 S1 S2 S3 S4 S5 S6 S7
+.outputs W0 W1 W2
+.names S0 S3 N1
+11 0
+.names S0 N1 N2
+11 0
+.names S3 N1 N3
+11 0
+.names N2 N3 A
+11 0
+.names A S6 N5
+11 0
+.names A N5 N6
+11 0
+.names S6 N5 N7
+11 0
+.names N6 N7 W0
+11 0
+.names S1 S4 N9
+11 0
+.names S1 N9 N10
+11 0
+.names S4 N9 N11
+11 0
+.names N10 N11 B
+11 0
+.names B S7 N13
+11 0
+.names B N13 N14
+11 0
+.names S7 N13 N15
+11 0
+.names N14 N15 W1
+11 0
+.names S2 S5 N17
+11 0
+.names S2 N17 N18
+11 0
+.names S5 N17 N19
+11 0
+.names N18 N19 C
+11 0
+.names C B N21
+11 0
+.names C N21 N22
+11 0
+.names B N21 N23
+11 0
+.names N22 N23 W2
+11 0
+.end
