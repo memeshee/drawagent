@@ -86,6 +86,7 @@ schematic.py      schematic renderer
 service.json      OKX.AI service listing
 submission.md     hackathon form fields + paste-ready description
 avatar.png        agent avatar
+LICENSE           MIT
 ```
 
 ## Submission
